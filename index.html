@@ -19,14 +19,8 @@
         }
         /* Gradient background with Islamic pattern */
         .islamic-bg {
-            background-color: #0c392f;
-            background-image:
-                radial-gradient(circle at 100% 100%, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px),
-                radial-gradient(circle at 0 100%, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px),
-                radial-gradient(circle at 100% 0, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px),
-                radial-gradient(circle at 0 0, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px);
-            background-size: 40px 40px;
-            background-position: 0 0, 20px 20px, 20px 0, 0 20px;
+            /* PERUBAHAN: Mengganti background menjadi gradien hijau pastel */
+            background: linear-gradient(135deg, #065f46, #14b8a6);
         }
         .main-content-bg {
              background: rgba(12, 57, 47, 0.8);
@@ -63,11 +57,12 @@
         }
     </style>
 </head>
-<body class="islamic-bg text-white overflow-hidden">
+<body class="islamic-bg text-white">
 
     <div id="loading" class="flex items-center justify-center h-screen text-2xl">Memuat data jadwal salat...</div>
 
-    <div id="main-display" class="h-screen flex flex-col p-4 md:p-8 space-y-4 hidden">
+    <!-- PERUBAHAN: Mengganti h-screen menjadi min-h-screen agar bisa di-scroll jika konten melebihi layar -->
+    <div id="main-display" class="min-h-screen flex flex-col p-4 md:p-8 space-y-4 hidden">
         <!-- Header: Nama Masjid dan Tanggal -->
         <header class="main-content-bg text-center p-4 rounded-xl shadow-lg">
             <h1 id="mosque-name" class="text-3xl md:text-5xl font-bold text-yellow-400">MASJID AL-HIDAIYAH</h1>
@@ -81,7 +76,8 @@
         <!-- Main Content: Jadwal Salat Kiri, Jam Tengah, Jadwal Salat Kanan -->
         <main class="flex flex-col lg:flex-row items-stretch justify-center gap-4 md:gap-8 flex-grow">
             <!-- Left Prayer Times -->
-            <div id="prayer-times-left" class="main-content-bg flex-1 grid grid-rows-3 gap-4 p-4 rounded-xl">
+            <!-- PERUBAHAN: Mengganti grid menjadi flexbox vertikal agar lebih fleksibel -->
+            <div id="prayer-times-left" class="main-content-bg flex-1 flex flex-col justify-around gap-4 p-4 rounded-xl">
                 <!-- JS will insert Subuh, Dzuhur, Ashar cards -->
             </div>
 
@@ -103,7 +99,8 @@
             </div>
 
             <!-- Right Prayer Times -->
-            <div id="prayer-times-right" class="main-content-bg flex-1 grid grid-rows-2 gap-4 p-4 rounded-xl">
+            <!-- PERUBAHAN: Mengganti grid menjadi flexbox vertikal agar lebih fleksibel -->
+            <div id="prayer-times-right" class="main-content-bg flex-1 flex flex-col justify-around gap-4 p-4 rounded-xl">
                 <!-- JS will insert Maghrib, Isya cards -->
             </div>
         </main>
