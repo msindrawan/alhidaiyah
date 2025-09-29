@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Salat Digital</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        /* Gradient background with Islamic pattern */
+        .islamic-bg {
+            background-color: #0c392f;
+            background-image:
+                radial-gradient(circle at 100% 100%, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px),
+                radial-gradient(circle at 0 100%, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px),
+                radial-gradient(circle at 100% 0, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px),
+                radial-gradient(circle at 0 0, transparent 10px, #eab308 10px, #eab308 12px, transparent 12px);
+            background-size: 40px 40px;
+            background-position: 0 0, 20px 20px, 20px 0, 0 20px;
+        }
+        .main-content-bg {
+             background: rgba(12, 57, 47, 0.8);
+             backdrop-filter: blur(10px);
+             border: 1px solid rgba(234, 179, 8, 0.2);
+        }
+        /* Smooth transition for clock updates */
+        .time-display {
+            transition: opacity 0.5s ease-in-out;
+        }
+        /* Highlight animation for next prayer */
+        @keyframes pulse-gold {
+            0%, 100% {
+                box-shadow: 0 0 15px 0px rgba(234, 179, 8, 0.6);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 30px 10px rgba(234, 179, 8, 0.8);
+                transform: scale(1.02);
+            }
+        }
+        .highlight-prayer {
+            animation: pulse-gold 4s infinite;
+            border-color: #eab308;
+        }
+
+        /* Running text animation */
+        @keyframes running-text-marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+        .running-text-content {
+            animation: running-text-marquee 30s linear infinite;
+        }
+    </style>
+</head>
+<body class="islamic-bg text-white overflow-hidden">
+
+    <div id="loading" class="flex items-center justify-center h-screen text-2xl">Memuat data jadwal salat...</div>
+
+    <div id="main-display" class="h-screen flex flex-col p-4 md:p-8 space-y-4 hidden">
+        <!-- Header: Nama Masjid dan Tanggal -->
+        <header class="main-content-bg text-center p-4 rounded-xl shadow-lg">
+            <h1 id="mosque-name" class="text-3xl md:text-5xl font-bold text-yellow-400">MASJID AL-HIDAIYAH</h1>
+            <div class="flex justify-center items-center space-x-4 mt-2 text-lg md:text-2xl text-gray-200">
+                <span id="gregorian-date"></span>
+                <span>|</span>
+                <span id="hijri-date"></span>
+            </div>
+        </header>
+
+        <!-- Main Content: Jadwal Salat Kiri, Jam Tengah, Jadwal Salat Kanan -->
+        <main class="flex flex-col lg:flex-row items-stretch justify-center gap-4 md:gap-8 flex-grow">
+            <!-- Left Prayer Times -->
+            <div id="prayer-times-left" class="main-content-bg flex-1 grid grid-rows-3 gap-4 p-4 rounded-xl">
+                <!-- JS will insert Subuh, Dzuhur, Ashar cards -->
+            </div>
+
+            <!-- Center: Clock and Countdown -->
+            <div class="main-content-bg flex flex-col justify-center items-center text-center p-6 rounded-xl shadow-lg lg:w-2/4 order-first lg:order-none space-y-6">
+                 <!-- Jam Digital -->
+                <div class="time-display">
+                    <div id="current-time" class="text-6xl md:text-8xl font-black tracking-wider">00:00:00</div>
+                </div>
+                 <!-- Hitung Mundur Salat Berikutnya -->
+                <div id="countdown-container" class="w-full bg-yellow-400 text-green-900 p-4 rounded-lg shadow-inner">
+                    <p id="next-prayer-label" class="text-xl md:text-2xl font-semibold">Menuju Waktu</p>
+                    <p id="countdown-timer" class="text-4xl md:text-5xl font-bold mt-1">00:00:00</p>
+                </div>
+                 <!-- Pesan Singkat -->
+                 <div class="bg-gray-700/50 p-3 rounded-lg text-base md:text-lg">
+                    <p>"Barangsiapa yang menunjuki kepada kebaikan maka dia akan mendapatkan pahala seperti pahala orang yang mengerjakannya." (HR. Muslim)</p>
+                </div>
+            </div>
+
+            <!-- Right Prayer Times -->
+            <div id="prayer-times-right" class="main-content-bg flex-1 grid grid-rows-2 gap-4 p-4 rounded-xl">
+                <!-- JS will insert Maghrib, Isya cards -->
+            </div>
+        </main>
+
+        <!-- Footer: Running Text -->
+        <footer class="main-content-bg w-full p-3 rounded-xl shadow-lg overflow-hidden">
+            <div class="relative flex overflow-x-hidden">
+                 <div class="running-text-content whitespace-nowrap text-lg md:text-xl font-semibold">
+                    <span>Selamat datang di Masjid Al-Hidaiyah. ••• Kajian 2 pekan sekali Setiap Hari Kamis Ba'da Maghrib. ••• Mari perbanyak shalawat di hari Jum'at. ••• Jaga kebersihan dan kesucian masjid. ••• </span>
+                 </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // --- KONFIGURASI ---
+        const NAMA_KOTA = "Bandarlampung"; // Ganti dengan nama kota Anda
+        const NAMA_NEGARA = "Indonesia"; // Ganti dengan nama negara Anda
+        const NAMA_MASJID = "MASJID AL-HIDAIYAH"; // Ganti dengan nama masjid Anda
+        const COUNTDOWN_HIGHLIGHT_MINUTES = 15; // Hitung mundur akan lebih menonjol saat kurang dari menit ini
+        const PENYESUAIAN_WAKTU = {
+            ashar: "14:57" // Penyesuaian manual untuk Ashar sesuai permintaan
+        };
+
+        // --- ELEMEN DOM ---
+        const loadingDiv = document.getElementById('loading');
+        const mainDisplayDiv = document.getElementById('main-display');
+        const mosqueNameEl = document.getElementById('mosque-name');
+        const gregorianDateEl = document.getElementById('gregorian-date');
+        const hijriDateEl = document.getElementById('hijri-date');
+        const currentTimeEl = document.getElementById('current-time');
+        const countdownContainer = document.getElementById('countdown-container');
+        const nextPrayerLabelEl = document.getElementById('next-prayer-label');
+        const countdownTimerEl = document.getElementById('countdown-timer');
+        const prayerTimesLeftEl = document.getElementById('prayer-times-left');
+        const prayerTimesRightEl = document.getElementById('prayer-times-right');
+
+        // --- STATE APLIKASI ---
+        let prayerTimes = {};
+        let nextPrayerInfo = null;
+        
+        // Daftar nama salat untuk iterasi dan tampilan
+        const prayerNames = {
+            subuh: "Subuh",
+            dzuhur: "Dzuhur",
+            ashar: "Ashar",
+            maghrib: "Maghrib",
+            isya: "Isya"
+        };
+        
+        // --- FUNGSI UTAMA ---
+
+        // 1. Fungsi untuk mengambil data jadwal salat dari API
+        async function fetchPrayerTimes() {
+            try {
+                // Menggunakan API dari Aladhan yang lebih terbuka (CORS-friendly)
+                // Method 20 adalah untuk Kemenag RI
+                const response = await fetch(`https://api.aladhan.com/v1/timingsByCity?city=${NAMA_KOTA}&country=${NAMA_NEGARA}&method=20`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                if (data.code === 200 && data.data.timings) {
+                    // Mapping nama salat dari API ke nama yang digunakan di aplikasi
+                    const timings = data.data.timings;
+                    let fetchedTimes = {
+                        subuh: timings.Fajr.substring(0, 5), // Mengambil HH:mm
+                        dzuhur: timings.Dhuhr.substring(0, 5),
+                        ashar: timings.Asr.substring(0, 5),
+                        maghrib: timings.Maghrib.substring(0, 5),
+                        isya: timings.Isha.substring(0, 5),
+                    };
+
+                    // Terapkan penyesuaian manual dari konfigurasi
+                    prayerTimes = { ...fetchedTimes, ...PENYESUAIAN_WAKTU };
+
+                    displayPrayerTimes();
+                    loadingDiv.style.display = 'none';
+                    mainDisplayDiv.style.display = 'flex';
+                } else {
+                    throw new Error('Format data API tidak valid');
+                }
+            } catch (error) {
+                console.error("Gagal mengambil jadwal salat:", error);
+                loadingDiv.innerText = "Gagal memuat data. Silakan periksa koneksi internet dan coba lagi.";
+            }
+        }
+
+        // 2. Fungsi untuk menampilkan jadwal salat ke UI
+        function displayPrayerTimes() {
+            prayerTimesLeftEl.innerHTML = ''; // Kosongkan grid kiri
+            prayerTimesRightEl.innerHTML = ''; // Kosongkan grid kanan
+            mosqueNameEl.innerText = NAMA_MASJID;
+
+            let count = 0;
+            for (const key in prayerNames) {
+                const card = document.createElement('div');
+                card.id = `prayer-${key}`;
+                card.className = "bg-green-900/50 p-4 rounded-xl border-2 border-transparent transition-all duration-500 flex flex-col justify-center items-center text-center";
+                
+                const nameEl = document.createElement('h3');
+                nameEl.className = "text-xl md:text-2xl font-semibold text-yellow-400";
+                nameEl.innerText = prayerNames[key];
+                
+                const timeEl = document.createElement('p');
+                timeEl.className = "text-3xl md:text-4xl font-bold mt-1";
+                timeEl.innerText = prayerTimes[key];
+                
+                card.appendChild(nameEl);
+                card.appendChild(timeEl);
+                
+                // Membagi jadwal salat ke sisi kiri dan kanan
+                if (count < 3) { // Subuh, Dzuhur, Ashar
+                    prayerTimesLeftEl.appendChild(card);
+                } else { // Maghrib, Isya
+                    prayerTimesRightEl.appendChild(card);
+                }
+                count++;
+            }
+        }
+
+        // 3. Fungsi untuk memperbarui jam dan tanggal secara real-time
+        function updateClock() {
+            const now = new Date();
+            
+            // Format jam: HH:MM:SS
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            currentTimeEl.textContent = `${hours}:${minutes}:${seconds}`;
+
+            // Format tanggal Masehi (e.g., Sabtu, 27 September 2025)
+            const gregorianFormat = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            gregorianDateEl.textContent = now.toLocaleString('id-ID', gregorianFormat);
+
+            // Format tanggal Hijriah (e.g., 10 Rabiul Awwal 1447)
+            const hijriFormat = { calendar: 'islamic-umalqura', year: 'numeric', month: 'long', day: 'numeric' };
+            hijriDateEl.textContent = new Intl.DateTimeFormat('id-ID-u-ca-islamic-umalqura', hijriFormat).format(now);
+        }
+
+        // 4. Fungsi untuk mencari salat berikutnya dan menghitung mundur
+        function findNextPrayer() {
+            if (Object.keys(prayerTimes).length === 0) return;
+
+            const now = new Date();
+            const currentTime = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            let nextPrayer = null;
+            let nextPrayerTimeSeconds = Infinity;
+            
+            // Cari salat berikutnya hari ini
+            for (const key in prayerNames) {
+                const [h, m] = prayerTimes[key].split(':');
+                const prayerTimeSeconds = parseInt(h) * 3600 + parseInt(m) * 60;
+                
+                if (prayerTimeSeconds > currentTime && prayerTimeSeconds < nextPrayerTimeSeconds) {
+                    nextPrayerTimeSeconds = prayerTimeSeconds;
+                    nextPrayer = key;
+                }
+            }
+            
+            // Jika tidak ada lagi salat hari ini, maka salat berikutnya adalah Subuh besok
+            if (nextPrayer === null) {
+                const [h, m] = prayerTimes.subuh.split(':');
+                // Total detik dalam sehari + detik waktu subuh
+                nextPrayerTimeSeconds = (24 * 3600) + (parseInt(h) * 3600 + parseInt(m) * 60);
+                nextPrayer = 'subuh';
+            }
+
+            nextPrayerInfo = {
+                name: nextPrayer,
+                timeInSeconds: nextPrayerTimeSeconds
+            };
+        }
+        
+        // 5. Fungsi untuk memperbarui tampilan hitung mundur dan highlight
+        function updateCountdown() {
+            if (!nextPrayerInfo) return;
+
+            const now = new Date();
+            const currentTime = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+            
+            let timeDiff = nextPrayerInfo.timeInSeconds - currentTime;
+            
+            // Jika sudah melewati Isya, perbedaan waktu perlu penyesuaian
+            if(nextPrayerInfo.name === 'subuh' && timeDiff > 12 * 3600){
+                 timeDiff = nextPrayerInfo.timeInSeconds - (currentTime + 24 * 3600);
+            }
+
+            if (timeDiff <= 0) {
+                // Waktu salat telah tiba, cari salat berikutnya
+                findNextPrayer();
+                // Tunggu jadwal baru difetch jika perlu
+                if (new Date().getMinutes() === 1) { // Ambil ulang data di awal jam baru
+                    fetchPrayerTimes();
+                }
+                return;
+            }
+
+            const hours = Math.floor(timeDiff / 3600);
+            const minutes = Math.floor((timeDiff % 3600) / 60);
+            const seconds = timeDiff % 60;
+
+            countdownTimerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            nextPrayerLabelEl.textContent = `Menuju Waktu ${prayerNames[nextPrayerInfo.name]}`;
+            
+            // Update highlight
+            document.querySelectorAll('[id^="prayer-"]').forEach(card => {
+                card.classList.remove('highlight-prayer', 'bg-yellow-600/50');
+            });
+            
+            const nextPrayerCard = document.getElementById(`prayer-${nextPrayerInfo.name}`);
+            if (nextPrayerCard) {
+                nextPrayerCard.classList.add('bg-yellow-600/50');
+                // Tambahkan animasi pulse jika sudah dekat
+                if (timeDiff / 60 <= COUNTDOWN_HIGHLIGHT_MINUTES) {
+                     nextPrayerCard.classList.add('highlight-prayer');
+                }
+            }
+        }
+
+        // --- INISIALISASI ---
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchPrayerTimes();
+            
+            // Jalankan update setiap detik
+            setInterval(() => {
+                updateClock();
+                if (nextPrayerInfo) {
+                    updateCountdown();
+                } else {
+                    findNextPrayer(); // Coba lagi jika info salat berikutnya belum ada
+                }
+            }, 1000);
+
+            // Perbarui jadwal salat setiap jam untuk memastikan keakuratan
+            setInterval(fetchPrayerTimes, 3600 * 1000);
+        });
+
+    </script>
+</body>
+</html>
